@@ -1,0 +1,33 @@
+[package]
+name = "fadafada-wasm"
+version = "0.0.0-alpha.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies.fadafada]
+path = "../fadafada_lib"
+features = ["yaml"]
+
+[dependencies.wasm-bindgen]
+version = "^0.2.78"
+
+[dependencies.web-sys]
+version = "0.3.57"
+features = [
+  'Headers',
+  'Request',
+  'RequestInit',
+  'RequestMode',
+  'Response',
+#  'Window',
+]
+
+[dependencies.js-sys]
+version = "0.3.57"
+
+[dependencies.wasm-bindgen-futures]
+version = "0.4.30"
