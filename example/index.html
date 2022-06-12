@@ -1,0 +1,102 @@
+<html>
+	<head>
+		<title>fadafada</title>
+		<script type="module">
+			import init, {from_yaml, WasmResolver, WasmResolverItem } from '/fadafada_wasm.js';
+
+function generic_fetch(v, o) {
+	generic_fetch(v).then((r) => {
+		console.debug('mock fetch ok', v, r);
+		o.complete(r);
+	}).catch((e) => {
+		console.error('fail fetch', v, e);
+	});
+}
+
+class Dispatcher {
+	constructor(fetcher) {
+		this.active = true;
+		this.jobs = [];
+		this.fetcher = fetcher;
+	}
+
+	add(offset, url) {
+		let t = setTimeout(this.fetcher, offset, url, this);
+		this.jobs.push(t);
+		console.debug('dispatcher add', url);
+	}
+
+	complete(v) {
+		if (!this.active) {
+			return;
+		}
+		this.active = false;
+		console.debug('complete', v, this);
+		while (true) {
+			let j = this.jobs.shift();
+			if (j === undefined) {
+				break;	
+			}
+			console.debug('clearing job', j);
+			clearTimeout(j);
+		}
+	}
+}
+
+function add(dispatcher, offset, url) {
+	dispatcher.add(url, offset, url);
+}
+
+async function run() {
+	let dispatcher = new Dispatcher(mock_fetch);
+
+	await init();
+	const s = `delay: 200
+timeout: 4000
+sources:
+  - engine: foo
+    endpoints:
+      - url: http://localhost:8000/a
+  - engine: bar
+    endpoints:
+      - url: http://localhost:8000/b
+`;
+	let c = from_yaml(s);
+	console.debug('foo' + c);
+
+	let r = WasmResolver.new();
+	console.debug('rseolver ' + r);
+
+	let ri = WasmResolverItem.new("deadbeef");
+	console.debug('item ' + ri);
+
+	let rii = WasmResolverItem.new("beeffeed");
+
+	r.add('foo', ri);
+	r.add('bar', rii);
+
+	let g = c.generate(r);
+
+	let l = g.len();
+
+	let start = new Date().getTime();
+
+	mock_fetcher_valid_url.push("file:///tmp/fadafada_curl/b/beeffeed");
+	
+	for (let i = 0; i < l; i++) {
+		let entry_offset = Number(g.get_offset(i));
+		let now = new Date().getTime();
+		let delta = now - start;
+		let actual_offset = (entry_offset - delta);
+		//let t = setTimeout(add, actual_offset, dispatcher, entry_offset, g.get_url(i));
+		dispatcher.add(actual_offset, g.get_url(i));
+		console.log('i ', i);
+	}
+}
+
+run();
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
