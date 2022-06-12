@@ -1,5 +1,4 @@
 use std::fmt;
-
 extern crate wasm_bindgen;
 use wasm_bindgen::prelude::*;
 
@@ -31,6 +30,17 @@ use fadafada::yaml::{
 
 
 #[wasm_bindgen]
+pub struct WasmResolverError {
+}
+
+
+impl fmt::Debug for WasmResolverError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Resolver error debug")
+    }
+}
+
+#[wasm_bindgen]
 pub struct WasmControllerGraph {
     graph: ControllerGraph,
 }
@@ -41,16 +51,23 @@ impl WasmControllerGraph {
             graph: graph,
         }
     }
+}
+
+#[wasm_bindgen]
+impl WasmControllerGraph {
 
     pub fn len(&self) -> usize {
         self.graph.len()
     }
 
-    pub fn get(&self, i: usize) -> String {
+    pub fn get_url(&self, i: usize) -> String {
         return self.graph.get(i).1;
     }
-}
 
+    pub fn get_offset(&self, i: usize) -> u64 {
+        return self.graph.get(i).0;
+    }
+}
 
 #[wasm_bindgen]
 pub struct WasmController {
@@ -62,11 +79,13 @@ pub struct WasmResolver {
     resolvers: HashMap<Engine, WasmResolverItem>,
 }
 
+#[wasm_bindgen]
 pub struct WasmResolverItem {
     digest: Digest,
     src: String,
 }
 
+#[wasm_bindgen]
 impl WasmResolverItem {
     pub fn new(content: String) -> WasmResolverItem {
         WasmResolverItem{
@@ -83,12 +102,14 @@ impl WasmResolverItem {
         return self.src.clone();
     }
 
-    fn signature(&self) -> Result<Signature, ResolverError> {
-        let err = ResolverError::new(ErrorDetail::UnknownEngineError);
+    fn signature(&self) -> Result<Signature, WasmResolverError> {
+        //let err = ResolverError::new(ErrorDetail::UnknownEngineError);
+        let err = WasmResolverError{};
         return Err(err);
     }
 } 
 
+#[wasm_bindgen]
 impl WasmResolver {
     pub fn new() -> WasmResolver {
         WasmResolver {
@@ -98,27 +119,31 @@ impl WasmResolver {
     /// Register a [ResolverItem] for an [source::Engine].
     /// 
     /// Will error if a record for [source::Engine] already exists.
-    pub fn add(&mut self, e: Engine, r: WasmResolverItem) -> Result<(), ResolverError> {
+    pub fn add(&mut self, e: Engine, r: WasmResolverItem) -> Result<(), WasmResolverError> {
         if self.resolvers.contains_key(&e) {
-            let e = ResolverError::new(ErrorDetail::EngineExistsError);
+        //    let e = ResolverError::new(ErrorDetail::EngineExistsError);
+            let e = WasmResolverError{};
             return Err(e);
         }
         debug!(">>>>> add resolver {}", e);
         self.resolvers.insert(e, r);
         Ok(())
     }
+}
 
+impl WasmResolver {
     /// Retrieve the [ResolverItem] registered for an [source::Engine].
     /// 
     /// Will error if a record for `Engine` doesn't exist.
-    pub fn pointer_for(&self, e: &Engine) -> Result<String, ResolverError> {
+    pub fn pointer_for(&self, e: &Engine) -> Result<String, WasmResolverError> {
         match self.resolvers.get(e) {
             Some(x) => {
                 Ok(x.pointer())
             },
             None => {
-                let err_detail = ErrorDetail::UnknownEngineError;
-                let err = ResolverError::new(err_detail);
+                //let err_detail = ErrorDetail::UnknownEngineError;
+                //let err = ResolverError::new(err_detail);
+                let err = WasmResolverError{};
                 return Err(err);
             },
         }
