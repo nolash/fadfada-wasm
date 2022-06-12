@@ -1,11 +1,13 @@
-<html>
-	<head>
-		<title>fadafada</title>
+<html> <head>
+		<title>fadafada wasm demo</title>
 		<script type="module">
-			import init, {from_yaml, WasmResolver, WasmResolverItem } from '/fadafada_wasm.js';
+			import init, { from_yaml, WasmResolver, WasmResolverItem } from '/fadafada_wasm.js';
 
-function generic_fetch(v, o) {
-	generic_fetch(v).then((r) => {
+
+// thinly wrap the standard fetch API used to get the resources
+function simple_fetch(v, o) {
+	console.debug('start fetch', v);
+	fetch(v).then((r) => {
 		console.debug('mock fetch ok', v, r);
 		o.complete(r);
 	}).catch((e) => {
@@ -13,19 +15,29 @@ function generic_fetch(v, o) {
 	});
 }
 
+
+// Dispatcher enqueues and keeps track of all the pending requests,
+// and handles cancelling all remaining enqueued requests when a result
+// has been received.
 class Dispatcher {
-	constructor(fetcher) {
+	constructor(cb, fetcher) {
 		this.active = true;
 		this.jobs = [];
+		if (fetcher === undefined) {
+			fetcher = simple_fetch;
+		}
 		this.fetcher = fetcher;
+		this.cb = cb;
 	}
 
+	// Add a url to request at the given time offset
 	add(offset, url) {
+		console.debug('dispatcher add', url, offset);
 		let t = setTimeout(this.fetcher, offset, url, this);
 		this.jobs.push(t);
-		console.debug('dispatcher add', url);
 	}
 
+	// To be called on a successful fetch, to cancel all remaining enqueued requests.
 	complete(v) {
 		if (!this.active) {
 			return;
@@ -40,57 +52,59 @@ class Dispatcher {
 			console.debug('clearing job', j);
 			clearTimeout(j);
 		}
+		if (this.cb !== undefined) {
+			this.cb(v);
+		}
 	}
 }
 
-function add(dispatcher, offset, url) {
-	dispatcher.add(url, offset, url);
+function setResult(v) {
+	v.text().then((r) => {
+		document.getElementById('result').innerText = r;
+	});
 }
 
 async function run() {
-	let dispatcher = new Dispatcher(mock_fetch);
-
+	// start wasm
 	await init();
-	const s = `delay: 200
+
+	// example yaml input to generate the graph
+	// this will generate a request at the given endpoints in sequence 2 seconds apart
+	// (timeout is not being observed atm)
+	const s = `delay: 2000
 timeout: 4000
 sources:
-  - engine: foo
+  - engine: swarm
     endpoints:
-      - url: http://localhost:8000/a
-  - engine: bar
-    endpoints:
-      - url: http://localhost:8000/b
+      - url: http://localhost:5555
+      - url: https://gateway-proxy-bee-3-0.gateway.ethswarm.org/bytes
+      - url: http://188.166.20.28:1633/bytes/
 `;
+
+	// what is the url we are getting?
+	let urlParams = new URLSearchParams(window.location.search);
+	let hash = urlParams.get('h');
+	document.getElementById('hash').innerText = hash;
+
+	// let the wasm backend process the yaml spec and generate a request graph for the given hash
 	let c = from_yaml(s);
-	console.debug('foo' + c);
-
 	let r = WasmResolver.new();
-	console.debug('rseolver ' + r);
-
-	let ri = WasmResolverItem.new("deadbeef");
-	console.debug('item ' + ri);
-
-	let rii = WasmResolverItem.new("beeffeed");
-
-	r.add('foo', ri);
-	r.add('bar', rii);
-
+	let ri = WasmResolverItem.new("39eb390526ef74d841011eb53c4ca9bf924d5ae18f8540169ac3a472030f3827");
+	r.add('swarm', ri);
 	let g = c.generate(r);
 
-	let l = g.len();
-
-	let start = new Date().getTime();
-
-	mock_fetcher_valid_url.push("file:///tmp/fadafada_curl/b/beeffeed");
 	
+	// Process the request graph, adding items at the generated time offsets
+	let l = g.len();
+	let start = new Date().getTime();
+	let dispatcher = new Dispatcher(setResult);
 	for (let i = 0; i < l; i++) {
+		// adjust the offset to with the time its taken to add the request to the dispatcher
 		let entry_offset = Number(g.get_offset(i));
 		let now = new Date().getTime();
 		let delta = now - start;
 		let actual_offset = (entry_offset - delta);
-		//let t = setTimeout(add, actual_offset, dispatcher, entry_offset, g.get_url(i));
 		dispatcher.add(actual_offset, g.get_url(i));
-		console.log('i ', i);
 	}
 }
 
@@ -98,5 +112,9 @@ run();
 		</script>
 	</head>
 	<body>
+		<h1>hash</h1>
+		<div id="hash"></div>
+		<h2>result</h2>
+		<div id="result">...</div>
 	</body>
 </html>
