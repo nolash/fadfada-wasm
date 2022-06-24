@@ -8,22 +8,22 @@ use hex;
 
 use std::collections::HashMap;
 
-use fadafada::control::{
+use fadfada::control::{
     Controller,
 };
-use fadafada::control::graph::{
+use fadfada::control::graph::{
     ControllerGraph,
 };
-use fadafada::resolver::{
+use fadfada::resolver::{
     ResolverError,
     ErrorDetail,
     Digest,
     Signature,
 };
-use fadafada::source::{
+use fadfada::source::{
     Engine,
 };
-use fadafada::yaml::{
+use fadfada::yaml::{
     FromYaml,
     yaml_from_str,
 };
@@ -198,10 +198,10 @@ timeout: 4000
 sources:
   - engine: foo
     endpoints:
-      - url: file:///tmp/fadafada_curl/a
+      - url: file:///tmp/fadfada_curl/a
   - engine: bar
     endpoints:
-      - url: file:///tmp/fadafada_curl/b
+      - url: file:///tmp/fadfada_curl/b
 ";
         let mut c = super::from_yaml(&s);
         let mut r = super::WasmResolver::new();
