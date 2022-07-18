@@ -8,8 +8,9 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "lib"]
 
-[dependencies.fadafada]
-git = "https://gitlab.com/nolash/fadafada"
+[dependencies.fadfada]
+#git = "https://gitlab.com/nolash/fadafada"
+git = "git://git.defalsify.org/fadfada"
 branch = "lash/wasm"
 features = ["yaml"]
 

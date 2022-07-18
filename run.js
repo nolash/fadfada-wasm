@@ -7,10 +7,10 @@ timeout: 4000
 sources:
   - engine: foo
     endpoints:
-      - url: file:///tmp/fadafada_curl/a
+      - url: http://localhost:8080
+      - url: http://localhost/~lash/tmp/fadafada/a
   - engine: bar
-    endpoints:
-      - url: file:///tmp/fadafada_curl/b
+      - url: http://localhost:8080
 `;
 	const v = from_yaml(s);
 	console.debug(v);
